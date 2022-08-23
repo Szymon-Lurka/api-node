@@ -1,37 +1,17 @@
-const fs = require('fs');
-const express = require('express');
+import express from "express";
+import morgan from 'morgan';
+import tourRouter from "./routes/tours/index.js";
+import userRouter from "./routes/users/index.js";
+import { getDirname } from "./utils/get-dirname.js";
 
 const app = express();
+if (process.env.NODE_ENV.trim() == 'development') {
+    app.use(morgan('dev'));
+}
 app.use(express.json());
+app.use(express.static(`${ getDirname(import.meta.url) }/public`));
 
-const tours = JSON.parse(fs.readFileSync(`${ __dirname }/dev-data/data/tours-simple.json`, 'utf-8'));
+app.use('/api/v1/tours', tourRouter);
+app.use('/api/v1/users', userRouter);
 
-app.get('/api/v1/tours', (req, res) => {
-    res.status(200).json({
-        status: 'success',
-        results: tours.length,
-        data: {
-            tours
-        }
-    });
-});
-
-app.post('/api/v1/tours', (req, res) => {
-    const newID = tours[tours.length - 1].id + 1;
-    const newTour = { ...req.body, id: newID };
-    tours.push(newTour);
-    fs.writeFile(`${ __dirname }/dev-data/data/tours-simple.json`, JSON.stringify(tours), (err) => {
-        res.status(201).send({
-            status: 'success',
-            data: {
-                newTour
-            }
-        });
-    });
-});
-
-const port = 3000;
-
-app.listen(port, () => {
-    console.log(`App running on port ${ port }`);
-});
+export default app;
